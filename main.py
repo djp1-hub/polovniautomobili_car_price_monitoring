@@ -7,6 +7,8 @@ import re
 from dataclasses import dataclass
 import math
 from credo import api_key, db_config
+import urllib.parse
+
 
 @dataclass
 class YandexGeocoder:
@@ -44,6 +46,20 @@ class CarParser:
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
         }
+        self.brand, self.model = self.extract_brand_and_model(params)
+
+    def extract_brand_and_model(self, params):
+        # Извлекаем марку и модель из параметров URL
+        query = urllib.parse.parse_qs(params)
+        brand = query.get('brand', [''])[0]
+        model = query.get('model[0]', [''])[0]  # Обратите внимание на формат ключа в зависимости от URL
+
+        # Выведем марку и модель для отладки
+        print(f"url: {query}")
+        print(f"Brand: {brand}")
+        print(f"Model: {model}")
+        return brand, model
+
 
     def get_total_pages(self):
         response = requests.get(f"{self.base_url}?{self.params}", headers=self.headers)
@@ -58,6 +74,7 @@ class CarParser:
 
     def parse_cars(self, url):
         response = requests.get(url, headers=self.headers)
+        print(url)
         if response.status_code != 200:
             print("Ошибка при загрузке страницы")
             return pd.DataFrame()
@@ -99,7 +116,9 @@ class CarParser:
             'Price': original_price,
             'Clean_price': clean_price,
             'City': city.text.strip() if city else None,
-            'coord': coords
+            'coord': coords,
+            'model': f'{self.brand} {self.model}',  # Добавляем марку и модель
+
             }
             cars_data.append(car_data)
         return pd.DataFrame(cars_data)
@@ -139,14 +158,39 @@ class CarParser:
 
 
 
-car_parser = CarParser(
-    base_url="https://www.polovniautomobili.com/auto-oglasi/pretraga",
-    params="sort=basic&brand=peugeot&model%5B0%5D=308&chassis%5B0%5D=2634&city_distance=0&showOldNew=all&without_price=1",
-    db_config=db_config,
-    api_key=api_key
-)
+# car_parser = CarParser(
+#     base_url="https://www.polovniautomobili.com/auto-oglasi/pretraga",
+#     db_config=db_config,
+#     api_key=api_key
+# )
 
-car_df = car_parser.parse_all_pages()
-car_df = car_df.dropna(subset=['car_id'])
-print(car_df)
-car_parser.save_to_database(car_df, '308_prices')
+queries = [
+    {
+        'base_url': "https://www.polovniautomobili.com/auto-oglasi/pretraga",
+        'params': "sort=basic&brand=peugeot&model%5B0%5D=308&chassis%5B0%5D=2634&city_distance=0&showOldNew=all&without_price=1",
+        'table_name': '308_prices'
+    },
+    {
+        'base_url': "https://www.polovniautomobili.com/auto-oglasi/pretraga",
+        'params': "sort=basic&brand=volkswagen&model%5B0%5D=golf-6&price_to=&year_from=&year_to=&chassis%5B%5D=2634&showOldNew=all&submit_1=&without_price=1",
+        'table_name': '308_prices'
+    },
+    {
+        'base_url': "https://www.polovniautomobili.com/auto-oglasi/pretraga",
+        'params': "sort=basic&brand=volkswagen&model%5B0%5D=eos&city_distance=0&showOldNew=all&without_price=1",
+        'table_name': '308_prices'
+    }
+]
+
+# Обработайте каждый запрос
+for query in queries:
+    car_parser = CarParser(
+        base_url=query['base_url'],
+        params=query['params'],
+        db_config=db_config,
+        api_key=api_key
+    )
+    car_df = car_parser.parse_all_pages()
+    car_df = car_df.dropna(subset=['car_id'])
+    print(car_df)
+    car_parser.save_to_database(car_df, query['table_name'])
