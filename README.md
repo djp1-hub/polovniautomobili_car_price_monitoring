@@ -35,3 +35,5 @@ This script is designed for in-depth monitoring and analysis of specific car mod
 
 ## Screenshot
 ![Car Price Monitoring Script Screenshot](img/screen.png)
+## Map
+![Car Price Monitoring Script Screenshot](img/map.png)
