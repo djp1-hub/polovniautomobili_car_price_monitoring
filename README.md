@@ -40,4 +40,4 @@ This script is designed for in-depth monitoring and analysis of specific car mod
 
 ## Data Visualization
 
-Explore and visualize the collected data on [DataLens](https://datalens.yandex/oj5daeja71l4c).
+Explore and visualize the collected data on [DataLens](https://datalens.yandex/oj5daeja71l4c) or on [On-prem DataLens](https://datalens.krsk-vr.ru/0vc5knp1a5hoo-analiz-cen-avtomobilya-peugeot-308-cc)
