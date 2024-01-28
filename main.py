@@ -158,12 +158,6 @@ class CarParser:
 
 
 
-# car_parser = CarParser(
-#     base_url="https://www.polovniautomobili.com/auto-oglasi/pretraga",
-#     db_config=db_config,
-#     api_key=api_key
-# )
-
 queries = [
     {
         'base_url': "https://www.polovniautomobili.com/auto-oglasi/pretraga",
