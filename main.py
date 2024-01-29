@@ -46,20 +46,6 @@ class CarParser:
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
         }
-        self.brand, self.model = self.extract_brand_and_model(params)
-
-    def extract_brand_and_model(self, params):
-        # Извлекаем марку и модель из параметров URL
-        query = urllib.parse.parse_qs(params)
-        brand = query.get('brand', [''])[0]
-        model = query.get('model[0]', [''])[0]  # Обратите внимание на формат ключа в зависимости от URL
-
-        # Выведем марку и модель для отладки
-        print(f"url: {query}")
-        print(f"Brand: {brand}")
-        print(f"Model: {model}")
-        return brand, model
-
 
     def get_total_pages(self):
         response = requests.get(f"{self.base_url}?{self.params}", headers=self.headers)
@@ -84,6 +70,16 @@ class CarParser:
         cars_data = []
         for car_el in car_elements:
             set_info_elements = car_el.find_all('div', class_='setInfo')
+            title_link = car_el.find('a', class_='ga-title')
+            if title_link and title_link.text:
+                title_parts = title_link.text.strip().split()
+                if len(title_parts) >= 2:
+                    brand = title_parts[0]
+                    model = title_parts[1]
+                else:
+                    brand = model = None
+            else:
+                brand = model = None
 
             price = car_el.find('div', class_='price')
             classified_id = car_el.get('data-classifiedid', None)
@@ -117,7 +113,7 @@ class CarParser:
             'Clean_price': clean_price,
             'City': city.text.strip() if city else None,
             'coord': coords,
-            'model': f'{self.brand} {self.model}',  # Добавляем марку и модель
+            'model': f'{brand} {model}',  # Добавляем марку и модель
 
             }
             cars_data.append(car_data)
@@ -173,6 +169,11 @@ queries = [
         'base_url': "https://www.polovniautomobili.com/auto-oglasi/pretraga",
         'params': "sort=basic&brand=volkswagen&model%5B0%5D=eos&city_distance=0&showOldNew=all&without_price=1",
         'table_name': '308_prices'
+    },
+    {
+        'base_url': "https://www.polovniautomobili.com/auto-oglasi/pretraga",
+        'params': "sort=basic&price_to=5000&year_from=2013&city_distance=0&showOldNew=all&without_price=1",
+        'table_name': '308_prices'
     }
 ]
 
@@ -186,5 +187,7 @@ for query in queries:
     )
     car_df = car_parser.parse_all_pages()
     car_df = car_df.dropna(subset=['car_id'])
+    car_df = car_df.drop_duplicates(subset=['car_id'])
+
     print(car_df)
-    car_parser.save_to_database(car_df, query['table_name'])
+    #car_parser.save_to_database(car_df, query['table_name'])
